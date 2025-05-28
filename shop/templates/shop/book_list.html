@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>Books List</title>
+	</head>
+	<body>
+		<h1>Books</h1>
+		<ul>
+			{% for book in page_obj %}
+			<li>
+				<a href="{{ book.get_absolute_url }}">{{ book.title }}</a> - {{
+				book.author }} - {{ book.price }} {% if book.discount_price %}
+				(Discounted Price: {{ book.discount_price }}) {% endif %}
+			</li>
+			{% endfor %}
+		</ul>
+	</body>
+</html>

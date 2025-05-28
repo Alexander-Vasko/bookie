@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title>{{ book.title }}</title>
+	</head>
+	<body>
+		<h1>{{ book.title }}</h1>
+		<p>Author: {{ book.author }}</p>
+		<p>Price: {{ book.price }}</p>
+		<p>Published: {{ book.published_date }}</p>
+		<p>Status: {{ book.status }}</p>
+		<p>Created at: {{ book.created_at }}</p>
+		<p><a href="{{ book.get_absolute_url }}">Back to book list</a></p>
+	</body>
+</html>

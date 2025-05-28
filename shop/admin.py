@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     User, Author, Genre, Series, Book, Review,
-    Order, OrderItem, Cart, Promotion, PromoBook
+    Order, OrderItem, Cart, Promotion, PromoBook, Category
 )
 
 @admin.register(User)
@@ -19,8 +19,8 @@ class AuthorAdmin(admin.ModelAdmin):
     list_display_links = ('full_name',)
 
     def short_biography(self, obj):
-        if obj.biography:
-            return obj.biography[:75] + '...' if len(obj.biography) > 75 else obj.biography
+        if obj.bio:  # Используем bio вместо biography, т.к. это поле в модели Author
+            return obj.bio[:75] + '...' if len(obj.bio) > 75 else obj.bio
         return ''
     short_biography.short_description = 'Краткая биография'
 
@@ -46,6 +46,7 @@ class BookAdmin(admin.ModelAdmin):
     raw_id_fields = ('author', 'genre', 'series')
     readonly_fields = ('id',)
     list_display_links = ('title',)
+    ordering = ('price',)  # Можно добавить сортировку по цене
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
@@ -88,7 +89,7 @@ class CartAdmin(admin.ModelAdmin):
     search_fields = ('user__name', 'book__title')
     readonly_fields = ('id',)
     list_display_links = ('id',)
-    
+
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
     list_display = ('id', 'description', 'promotion_type', 'start_date', 'end_date')
@@ -105,3 +106,5 @@ class PromoBookAdmin(admin.ModelAdmin):
     search_fields = ('promotion__description', 'book__title')
     readonly_fields = ('id',)
     list_display_links = ('id',)
+
+admin.site.register(Category)
