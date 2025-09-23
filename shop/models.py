@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from decimal import Decimal
 
 # Модель категории книг
 class Category(models.Model):
@@ -8,10 +9,12 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+
 # Кастомный менеджер для доступных книг
 class BookManager(models.Manager):
     def available(self):
         return self.filter(status='available')
+
 
 # Модель книги
 class Book(models.Model):
@@ -22,8 +25,8 @@ class Book(models.Model):
     ]
     
     title = models.CharField("Название книги", max_length=200)
-    author = models.ForeignKey('Author', verbose_name="Автор", on_delete=models.CASCADE)
-    genre = models.ForeignKey('Genre', verbose_name="Жанр", on_delete=models.CASCADE)
+    author = models.ForeignKey('Author', verbose_name="Автор", on_delete=models.CASCADE, related_name='books')
+    genre = models.ForeignKey('Genre', verbose_name="Жанр", on_delete=models.CASCADE, related_name='books')
     series = models.ForeignKey('Series', verbose_name="Серия", null=True, blank=True, on_delete=models.SET_NULL)
     year = models.PositiveIntegerField("Год издания")
     isbn = models.CharField("ISBN", max_length=20, unique=True)
@@ -31,6 +34,7 @@ class Book(models.Model):
     discount = models.DecimalField("Скидка", max_digits=5, decimal_places=2, default=0)
     description = models.TextField("Описание", blank=True)
     cover = models.ImageField("Обложка", upload_to='books/', null=True, blank=True)
+    file = models.FileField("Файл книги (PDF)", upload_to="books/files/", null=True, blank=True)  # <── добавлено
     published_date = models.DateField("Дата публикации", default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)  # Дата добавления книги
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
@@ -38,20 +42,29 @@ class Book(models.Model):
 
     objects = BookManager()  # Используем кастомный менеджер
 
+    promotions = models.ManyToManyField(
+        'Promotion',
+        through='PromoBook',
+        through_fields=('book', 'promotion'),
+        related_name='books'
+    )
+
     class Meta:
         verbose_name = "Книга"
         verbose_name_plural = "Книги"
-        ordering = ['price']  # Сортировка книг по цене
+        ordering = ['price']
 
     def __str__(self):
         return self.title
 
     # Метод для расчета скидки
-    def discount(self):
+    def calculate_discount(self):
+        if not self.price:  # проверка на None
+            return Decimal('0.0')
         days_on_shelf = (timezone.now() - self.created_at).days
         if days_on_shelf > 30:
-            return self.price * 0.1  # 10% скидка на книги, которые на складе более 30 дней
-        return 0
+            return self.price * Decimal('0.1')  # 10% скидка
+        return Decimal('0.0')
 
     # Метод для получения абсолютного URL книги
     def get_absolute_url(self):
@@ -160,7 +173,7 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.book} x {self.quantity}"
 
-        
+
 class Cart(models.Model):
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.CASCADE)
     book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
@@ -169,6 +182,7 @@ class Cart(models.Model):
     class Meta:
         verbose_name = "Корзина"
         verbose_name_plural = "Корзины"
+        unique_together = ('user', 'book')
 
     def __str__(self):
         return f"{self.user} - {self.book} x {self.quantity}"

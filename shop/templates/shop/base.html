@@ -1,0 +1,21 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<title>{% block title %}Bookie{% endblock %}</title>
+		<link rel="stylesheet" href="{% static 'shop/css/style.css' %}" />
+	</head>
+	<body>
+		<header>
+			<h1>Bookie</h1>
+			<nav>
+				<a href="{% url 'book_list' %}">Все книги</a> |
+				<a href="{% url 'available_books' %}">Доступные</a> |
+				<a href="{% url 'author_list' %}">Авторы</a>
+			</nav>
+		</header>
+
+		{% block content %} {% endblock %}
+	</body>
+</html>

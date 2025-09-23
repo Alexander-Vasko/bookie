@@ -1,0 +1,18 @@
+{% extends 'shop/base.html' %} {% block content %}
+<h1>Результаты поиска</h1>
+
+{% if results %}
+<ol>
+	{% for book in results %}
+	<li>
+		<a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a> - {{
+		book.author.full_name }}
+	</li>
+	{% endfor %}
+</ol>
+{% else %}
+<p>Ничего не найдено по запросу "{{ query }}"</p>
+{% endif %}
+
+<a href="{% url 'index' %}">На главную</a>
+{% endblock %}

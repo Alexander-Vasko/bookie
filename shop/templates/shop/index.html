@@ -1,0 +1,94 @@
+{% extends 'shop/base.html' %} {% load static %} {% block content %}
+<h1>Главная страница книжного магазина</h1>
+
+<!-- Форма поиска -->
+<form method="get" action="{% url 'search_books' %}">
+	<input type="text" name="q" placeholder="Поиск книги" />
+	<button type="submit">Найти</button>
+</form>
+
+<!-- Виджет 1: Популярные книги -->
+<section>
+	<h2>Популярные книги</h2>
+	<ol>
+		{% for book in popular_books %}
+		<li>
+			<a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a> - {{
+			book.author.full_name }}
+			<br />
+			{% if book.cover %}
+			<img src="{{ book.cover.url }}" alt="{{ book.title }}" width="60" />
+			{% else %}
+			<img
+				src="{% static 'shop/img/default_cover.jpg' %}"
+				alt="{{ book.title }}"
+				width="60"
+			/>
+			{% endif %}
+			<span>Год: {{ book.year }}</span>
+			<button>В избранное</button>
+		</li>
+		{% endfor %}
+	</ol>
+	<a href="#">Смотреть все популярные книги</a>
+</section>
+
+<!-- Виджет 2: Новые поступления -->
+<section>
+	<h2>Новые поступления</h2>
+	<ol>
+		{% for book in new_books %}
+		<li>
+			<a href="{% url 'book_detail' book.pk %}">{{ book.title }}</a> - {{
+			book.author.full_name }}
+			<br />
+			{% if book.cover %}
+			<img src="{{ book.cover.url }}" alt="{{ book.title }}" width="60" />
+			{% else %}
+			<img
+				src="{% static 'shop/img/default_cover.jpg' %}"
+				alt="{{ book.title }}"
+				width="60"
+			/>
+			{% endif %}
+			<span>Год: {{ book.year }}</span>
+			<button>В избранное</button>
+		</li>
+		{% endfor %}
+	</ol>
+	<a href="#">Смотреть все новые книги</a>
+</section>
+
+<!-- Виджет 3: Акции и скидки -->
+<section>
+	<h2>Акции и скидки</h2>
+	<ol>
+		{% for promo_book in promo_books %}
+		<li>
+			<a href="{% url 'book_detail' promo_book.book.pk %}"
+				>{{ promo_book.book.title }}</a
+			>
+			- {{ promo_book.book.author.full_name }}
+			<br />
+			{% if promo_book.book.cover %}
+			<img
+				src="{{ promo_book.book.cover.url }}"
+				alt="{{ promo_book.book.title }}"
+				width="60"
+			/>
+			{% else %}
+			<img
+				src="{% static 'shop/img/default_cover.jpg' %}"
+				alt="{{ promo_book.book.title }}"
+				width="60"
+			/>
+			{% endif %}
+			<span>Скидка: {{ promo_book.book.discount }}%</span>
+			<button>В избранное</button>
+		</li>
+		{% endfor %}
+	</ol>
+	<a href="#">Смотреть все акции</a>
+</section>
+
+{% endblock %}
