@@ -77,7 +77,14 @@ def category_books(request, category_id):
 def book_detail(request, pk):
     book = get_object_or_404(Book, pk=pk)
     book.discount_price = book.price - book.calculate_discount()
-    return render(request, 'shop/book_detail.html', {'book': book})
+    reviews = book.review_set.all()        # связанные отзывы
+    promos = book.promobook_set.all()      # связанные акции
+    return render(request, 'shop/book_detail.html', {
+        'book': book,
+        'reviews': reviews,
+        'promos': promos,
+    })
+
 
 
 # ======================

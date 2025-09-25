@@ -1,16 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<title>{{ book.title }}</title>
-	</head>
-	<body>
-		<h1>{{ book.title }}</h1>
-		<p>Author: {{ book.author }}</p>
-		<p>Price: {{ book.price }}</p>
-		<p>Published: {{ book.published_date }}</p>
-		<p>Status: {{ book.status }}</p>
-		<p>Created at: {{ book.created_at }}</p>
-		<p><a href="{{ book.get_absolute_url }}">Back to book list</a></p>
-	</body>
-</html>
+{% extends 'shop/base.html' %} {% block title %}{{ book.title }}{% endblock %}
+{% block content %}
+<h1>{{ book.title }}</h1>
+
+<p>
+	<strong>Автор:</strong>
+	<a href="{% url 'author_list' %}">{{ book.author.full_name }}</a>
+</p>
+<p><strong>Жанр:</strong> {{ book.genre.name }}</p>
+<p>
+	<strong>Серия:</strong> {% if book.series %}{{ book.series.name }}{% else
+	%}-{% endif %}
+</p>
+<p><strong>Год:</strong> {{ book.year }}</p>
+<p><strong>ISBN:</strong> {{ book.isbn }}</p>
+<p><strong>Цена:</strong> {{ book.price }} ₽</p>
+<p><strong>Скидка:</strong> {{ book.discount }}%</p>
+
+{% if book.cover %}
+<p><img src="{{ book.cover.url }}" alt="{{ book.title }}" width="150" /></p>
+{% endif %}
+
+<hr />
+
+<h2>Отзывы</h2>
+{% if book.review_set.all %}
+<ul>
+	{% for review in book.review_set.all %}
+	<li>
+		<strong>{{ review.user.name }}:</strong> {{ review.text }} ({{ review.rating
+		}}/5)
+	</li>
+	{% endfor %}
+</ul>
+{% else %}
+<p>Нет отзывов.</p>
+{% endif %}
+
+<hr />
+
+<h2>Акции и скидки</h2>
+{% if book.promobook_set.all %}
+<ul>
+	{% for promo in book.promobook_set.all %}
+	<li>{{ promo.promotion.description }} — Скидка: {{ book.discount }}%</li>
+	{% endfor %}
+</ul>
+{% else %}
+<p>Нет активных акций.</p>
+{% endif %}
+
+<a href="{% url 'book_list' %}">Вернуться к списку книг</a>
+
+{% endblock %}
