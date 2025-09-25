@@ -1,10 +1,10 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
+from django.db.models import Count
+from decimal import Decimal
+
 from .models import Book, Category, Author, PromoBook
 from .forms import AuthorForm, BookForm
-from decimal import Decimal
-from django.db.models import Count
-
 
 
 # ======================
@@ -27,11 +27,17 @@ def index(request):
         'promo_books': promo_books,
     })
 
+
 # Поиск книг по названию
 def search_books(request):
-    query = request.GET.get('q')
-    results = Book.objects.filter(title__icontains=query) if query else []
-    return render(request, 'shop/search_results.html', {'results': results, 'query': query})
+    query = request.GET.get('q', '')
+    books = Book.objects.filter(title__icontains=query) if query else []
+    for book in books:
+        book.discount_price = book.price - book.calculate_discount()
+    return render(request, 'shop/book_list.html', {
+        'page_obj': books,
+        'query': query
+    })
 
 
 def book_list(request):
@@ -73,15 +79,17 @@ def book_detail(request, pk):
     book.discount_price = book.price - book.calculate_discount()
     return render(request, 'shop/book_detail.html', {'book': book})
 
+
 # ======================
 # CRUD для Book
 # ======================
+
 def create_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            return redirect('book_list')  # редирект после добавления
+            return redirect('book_list')
     else:
         form = BookForm()
     return render(request, 'shop/book_form.html', {'form': form})
@@ -93,7 +101,7 @@ def edit_book(request, pk):
         form = BookForm(request.POST, request.FILES, instance=book)
         if form.is_valid():
             form.save()
-            return redirect('book_list')  # редирект после редактирования
+            return redirect('book_list')
     else:
         form = BookForm(instance=book)
     return render(request, 'shop/book_form.html', {'form': form, 'book': book})
@@ -103,12 +111,14 @@ def delete_book(request, pk):
     book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
         book.delete()
-        return redirect('book_list')  # редирект после удаления
+        return redirect('book_list')
     return render(request, 'shop/book_confirm_delete.html', {'book': book})
+
 
 # ======================
 # Примеры select_related / prefetch_related
 # ======================
+
 def books_with_author_genre(request):
     books = Book.objects.select_related('author', 'genre').all()
     return render(request, 'shop/book_list.html', {'page_obj': books})
@@ -118,25 +128,21 @@ def books_with_promotions(request):
     books = Book.objects.prefetch_related('promotions').all()
     return render(request, 'shop/book_list.html', {'page_obj': books})
 
+
 # ======================
 # Примеры Django ORM для части 4
 # ======================
-# Поиск по title (__icontains)
-def search_books(request):
-    query = request.GET.get('q', '')
-    books = Book.objects.filter(title__icontains=query)
-    for book in books:
-        book.discount_price = book.price - book.calculate_discount()
-    return render(request, 'shop/book_list.html', {'page_obj': books})
 
 # values() и values_list()
 def books_values(request):
     books = Book.objects.values('title', 'price')
     return render(request, 'shop/books_values.html', {'books': books})
 
+
 def books_values_list(request):
     books = Book.objects.values_list('title', 'price')
     return render(request, 'shop/books_values_list.html', {'books': books})
+
 
 # count() и exists()
 def books_stats(request):
@@ -147,18 +153,22 @@ def books_stats(request):
         'has_available': has_available
     })
 
+
 # update() и delete()
 def apply_discount(request):
-    Book.objects.update(discount=10)  # всем книгам 10% скидка
+    Book.objects.update(discount=10)
     return redirect('book_list')
 
+
 def delete_old_books(request):
-    Book.objects.filter(year__lt=2000).delete()  # удаляем старые книги
+    Book.objects.filter(year__lt=2000).delete()
     return redirect('book_list')
+
 
 # ======================
 # CRUD Author
 # ======================
+
 def author_list(request):
     authors = Author.objects.all()
     return render(request, 'shop/author_list.html', {'authors': authors})
