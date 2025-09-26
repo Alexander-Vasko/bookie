@@ -1,12 +1,16 @@
 from django.db.models import Avg, Count, Sum
 from rest_framework import generics
 from .models import Book, Author, Review, OrderItem, Favorite
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import BookFilter
 from .serializers import (
     BookSerializer,
     AuthorSerializer,
     ReviewSerializer,
     BookAnnotatedSerializer
 )
+
+filter_backends = [DjangoFilterBackend]
 
 
 # Список книг с аннотациями
