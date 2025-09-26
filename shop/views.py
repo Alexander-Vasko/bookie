@@ -3,8 +3,10 @@ from django.core.paginator import Paginator
 from django.db.models import Count
 from decimal import Decimal
 
-from .models import Book, Category, Author, PromoBook
-from .forms import AuthorForm, BookForm
+from django.contrib.auth import logout
+
+from .models import Book, Category, Author, PromoBook, Cart, Favorite, Review
+from .forms import AuthorForm, BookForm, ReviewForm
 
 
 # ======================
@@ -26,7 +28,112 @@ def index(request):
         'new_books': new_books,
         'promo_books': promo_books,
     })
+    
 
+# =====================
+# Регистрация
+# =====================
+def registration_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # автоматически логиним после регистрации
+            return redirect('index')
+    else:
+        form = UserCreationForm()
+    return render(request, 'shop/registration.html', {'form': form})
+
+# =====================
+# Вход (логин)
+# =====================
+def login_view(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            login(request, user)
+            return redirect('index')
+        else:
+            messages.error(request, 'Неверное имя пользователя или пароль')
+    else:
+        form = AuthenticationForm()
+    return render(request, 'shop/login.html', {'form': form})
+
+# =====================
+# Выход (logout)
+# =====================
+def logout_view(request):
+    if request.method == "POST":
+        logout(request)
+    return redirect('index')
+    
+# Добавление книги в корзину
+def add_to_cart(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    cart_item, created = Cart.objects.get_or_create(
+        user=request.user,
+        book=book,
+        defaults={'quantity': 1}  # если объект новый, сразу ставим quantity = 1
+    )
+    if not created:
+        cart_item.quantity += 1
+        cart_item.save()
+    return redirect('cart_detail')
+
+# Удаление книги из корзины
+def remove_from_cart(request, book_id):
+    cart_item = get_object_or_404(Cart, user=request.user, book_id=book_id)
+    cart_item.delete()
+    return redirect('cart_detail')
+
+# Просмотр корзины
+def cart_detail(request):
+    items = Cart.objects.filter(user=request.user)
+    for item in items:
+        item.total_price = item.book.discounted_price * item.quantity
+
+    total = sum(item.total_price for item in items)
+
+    return render(request, 'shop/cart.html', {
+        'items': items,
+        'total': total,
+    })
+
+
+# Добавление книги в избранное
+def add_to_favorites(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    Favorite.objects.get_or_create(user=request.user, book=book)
+    return redirect('favorites_list')
+
+# Удаление книги из избранного
+def remove_from_favorites(request, book_id):
+    fav = get_object_or_404(Favorite, user=request.user, book_id=book_id)
+    fav.delete()
+    return redirect('favorites_list')
+
+
+
+# Список избранного
+def favorites_list(request):
+    favorites = Favorite.objects.filter(user=request.user).select_related('book')
+    return render(request, 'shop/favorites.html', {'favorites': favorites})
+
+# Добавление отзыва
+def add_review(request, book_id):
+    book = get_object_or_404(Book, pk=book_id)
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.user = request.user
+            review.book = book
+            review.save()
+            return redirect('book_detail', pk=book.pk)
+    else:
+        form = ReviewForm()
+    return render(request, 'shop/add_review.html', {'form': form, 'book': book})
 
 # Поиск книг по названию
 def search_books(request):

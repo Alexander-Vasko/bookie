@@ -1,0 +1,22 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Добавить отзыв — {{ book.title }}{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Оставить отзыв для книги: {{ book.title }}</h1>
+
+<form method="post" action="">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="rating" class="form-label">Рейтинг (1-5)</label>
+        <input type="number" class="form-control" id="rating" name="rating" min="1" max="5" required>
+    </div>
+    <div class="mb-3">
+        <label for="text" class="form-label">Текст отзыва</label>
+        <textarea class="form-control" id="text" name="text" rows="4" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Отправить отзыв</button>
+    <a href="{% url 'book_detail' book.pk %}" class="btn btn-outline-secondary">Отмена</a>
+</form>
+{% endblock %}

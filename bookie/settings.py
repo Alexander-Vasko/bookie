@@ -4,6 +4,11 @@ from pathlib import Path
 # Путь к проекту
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Медиа-файлы (для загружаемых изображений и файлов)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # База данных (на примере SQLite)
 DATABASES = {
     'default': {
@@ -17,6 +22,8 @@ LANGUAGE_CODE = 'ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
+
+AUTH_USER_MODEL = 'shop.User'
 
 # Приложения
 INSTALLED_APPS = [
@@ -45,6 +52,10 @@ TEMPLATES = [
         },
     },
 ]
+
+# URL для редиректа после успешного логина
+LOGIN_REDIRECT_URL = 'index'  # или любой другой view name
+LOGOUT_REDIRECT_URL = 'index'  # куда отправлять после выхода
 
 
 # Middleware

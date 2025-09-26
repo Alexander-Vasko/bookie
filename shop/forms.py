@@ -1,5 +1,5 @@
 from django import forms
-from .models import Author, Book
+from .models import Author, Book, Review
 
 class AuthorForm(forms.ModelForm):
     class Meta:
@@ -8,6 +8,15 @@ class AuthorForm(forms.ModelForm):
         widgets = {
             'full_name': forms.TextInput(attrs={'class': 'form-control', 'aria-label': 'Полное имя автора'}),
             'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'aria-label': 'Биография автора'}),
+        }
+        
+class ReviewForm(forms.ModelForm):
+    class Meta:
+        model = Review
+        fields = ['text', 'rating']
+        widgets = {
+            'text': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'rating': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
         }
 
 class BookForm(forms.ModelForm):

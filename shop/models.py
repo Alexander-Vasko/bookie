@@ -1,6 +1,24 @@
 from django.db import models
 from django.utils import timezone
 from decimal import Decimal
+from django.contrib.auth.models import AbstractUser
+
+# Модель пользователя
+class User(AbstractUser):
+    """
+    Кастомная модель пользователя, наследуемая от AbstractUser.
+    Добавлены дополнительные поля: phone и address.
+    """
+    phone = models.CharField("Телефон", max_length=20, blank=True)
+    address = models.CharField("Адрес", max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
+    def __str__(self):
+        return self.username
+
 
 # Модель категории книг
 class Category(models.Model):
@@ -16,6 +34,45 @@ class BookManager(models.Manager):
         return self.filter(status='available')
 
 
+# Модель автора
+class Author(models.Model):
+    full_name = models.CharField("ФИО", max_length=200)
+    bio = models.TextField("Биография", blank=True)
+    photo = models.ImageField("Фото", upload_to='authors/', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Автор"
+        verbose_name_plural = "Авторы"
+
+    def __str__(self):
+        return self.full_name
+
+
+# Модель жанра
+class Genre(models.Model):
+    name = models.CharField("Название", max_length=100)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Жанр"
+        verbose_name_plural = "Жанры"
+
+    def __str__(self):
+        return self.name
+
+
+# Модель серии
+class Series(models.Model):
+    name = models.CharField("Название серии", max_length=100)
+
+    class Meta:
+        verbose_name = "Серия"
+        verbose_name_plural = "Серии"
+
+    def __str__(self):
+        return self.name
+
+
 # Модель книги
 class Book(models.Model):
     STATUS_CHOICES = [
@@ -23,24 +80,24 @@ class Book(models.Model):
         ('out_of_stock', 'Out of Stock'),
         ('discontinued', 'Discontinued'),
     ]
-    
+
     title = models.CharField("Название книги", max_length=200)
-    author = models.ForeignKey('Author', verbose_name="Автор", on_delete=models.CASCADE, related_name='books')
-    genre = models.ForeignKey('Genre', verbose_name="Жанр", on_delete=models.CASCADE, related_name='books')
-    series = models.ForeignKey('Series', verbose_name="Серия", null=True, blank=True, on_delete=models.SET_NULL)
+    author = models.ForeignKey(Author, verbose_name="Автор", on_delete=models.CASCADE, related_name='books')
+    genre = models.ForeignKey(Genre, verbose_name="Жанр", on_delete=models.CASCADE, related_name='books')
+    series = models.ForeignKey(Series, verbose_name="Серия", null=True, blank=True, on_delete=models.SET_NULL)
     year = models.PositiveIntegerField("Год издания")
     isbn = models.CharField("ISBN", max_length=20, unique=True)
     price = models.DecimalField("Цена", max_digits=10, decimal_places=2)
     discount = models.DecimalField("Скидка", max_digits=5, decimal_places=2, default=0)
     description = models.TextField("Описание", blank=True)
     cover = models.ImageField("Обложка", upload_to='books/', null=True, blank=True)
-    file = models.FileField("Файл книги (PDF)", upload_to="books/files/", null=True, blank=True)  # <── добавлено
+    file = models.FileField("Файл книги (PDF)", upload_to="books/files/", null=True, blank=True)
     published_date = models.DateField("Дата публикации", default=timezone.now)
-    created_at = models.DateTimeField(default=timezone.now)  # Дата добавления книги
+    created_at = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
     category = models.ForeignKey(Category, related_name='books', on_delete=models.CASCADE)
 
-    objects = BookManager()  # Используем кастомный менеджер
+    objects = BookManager()
 
     promotions = models.ManyToManyField(
         'Promotion',
@@ -57,71 +114,49 @@ class Book(models.Model):
     def __str__(self):
         return self.title
 
-    # Метод для расчета скидки
     def calculate_discount(self):
-        if not self.price:  # проверка на None
+        if not self.price:
             return Decimal('0.0')
         days_on_shelf = (timezone.now() - self.created_at).days
         if days_on_shelf > 30:
-            return self.price * Decimal('0.1')  # 10% скидка
+            return self.price * Decimal('0.1')
         return Decimal('0.0')
 
-    # Метод для получения абсолютного URL книги
+    @property
+    def active_promo(self):
+        now = timezone.now().date()
+        return self.promotions.filter(
+            start_date__lte=now,
+            end_date__gte=now
+        ).first()
+
+    @property
+    def discounted_price(self):
+        promo = self.active_promo
+        if promo and promo.discount_percent > 0:
+            return self.price * (Decimal('1.0') - promo.discount_percent / Decimal('100'))
+        return self.price
+
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('book_detail', kwargs={'pk': self.pk})
 
 
-class User(models.Model):
-    name = models.CharField("Имя", max_length=100)
-    email = models.EmailField("Email")
-    phone = models.CharField("Телефон", max_length=20)
-    address = models.CharField("Адрес", max_length=255)
+# Модель избранного
+class Favorite(models.Model):
+    user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
 
     class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
+        verbose_name = "Избранное"
+        verbose_name_plural = "Избранное"
+        unique_together = ('user', 'book')
 
     def __str__(self):
-        return self.name
+        return f"{self.user} - {self.book}"
 
 
-class Author(models.Model):
-    full_name = models.CharField("ФИО", max_length=200)
-    bio = models.TextField("Биография", blank=True)
-    photo = models.ImageField("Фото", upload_to='authors/', null=True, blank=True)
-
-    class Meta:
-        verbose_name = "Автор"
-        verbose_name_plural = "Авторы"
-
-    def __str__(self):
-        return self.full_name
-
-
-class Genre(models.Model):
-    name = models.CharField("Название", max_length=100)
-    description = models.TextField("Описание", blank=True)
-
-    class Meta:
-        verbose_name = "Жанр"
-        verbose_name_plural = "Жанры"
-
-    def __str__(self):
-        return self.name
-
-
-class Series(models.Model):
-    name = models.CharField("Название серии", max_length=100)
-
-    class Meta:
-        verbose_name = "Серия"
-        verbose_name_plural = "Серии"
-
-    def __str__(self):
-        return self.name
-
-
+# Модель отзывов
 class Review(models.Model):
     book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.CASCADE)
@@ -137,6 +172,7 @@ class Review(models.Model):
         return f"Отзыв на {self.book} от {self.user}"
 
 
+# Модель заказа
 class Order(models.Model):
     STATUS_CHOICES = [
         ('new', 'Новый'),
@@ -160,6 +196,7 @@ class Order(models.Model):
         return f"Заказ #{self.id} от {self.user}"
 
 
+# Позиции заказа
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE)
     book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
@@ -174,6 +211,7 @@ class OrderItem(models.Model):
         return f"{self.book} x {self.quantity}"
 
 
+# Корзина
 class Cart(models.Model):
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.CASCADE)
     book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)
@@ -188,20 +226,23 @@ class Cart(models.Model):
         return f"{self.user} - {self.book} x {self.quantity}"
 
 
+# Акции
 class Promotion(models.Model):
     description = models.TextField(verbose_name='Описание')
     promotion_type = models.CharField(max_length=50, verbose_name='Тип акции')
     start_date = models.DateField(verbose_name='Дата начала')
     end_date = models.DateField(verbose_name='Дата окончания')
-
-    def __str__(self):
-        return self.description
+    discount_percent = models.DecimalField(verbose_name='Скидка (%)', max_digits=5, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = 'Акция'
         verbose_name_plural = 'Акции'
 
+    def __str__(self):
+        return f"{self.description} — {self.discount_percent}%"
 
+
+# Книга в акции
 class PromoBook(models.Model):
     promotion = models.ForeignKey(Promotion, verbose_name="Акция", on_delete=models.CASCADE)
     book = models.ForeignKey(Book, verbose_name="Книга", on_delete=models.CASCADE)

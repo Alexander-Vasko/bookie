@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from .models import (
     User, Author, Genre, Series, Book, Review,
     Order, OrderItem, Cart, Promotion, PromoBook, Category
@@ -35,22 +36,35 @@ def apply_discount(modeladmin, request, queryset):
     for book in queryset:
         book.price *= 0.9
         book.save()
-    # Django не ждёт HttpResponse для обычного действия
-    # return ничего не делаем
 
 apply_discount.short_description = "Сделать скидку 10 процентов"
 
-
 # =====================
-# Админки
+# Админка пользователя
 # =====================
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'email', 'phone', 'address')
-    search_fields = ('name', 'email', 'phone', 'address')
-    readonly_fields = ('id',)
-    list_display_links = ('name',)
+class UserAdmin(BaseUserAdmin):
+    # Используем стандартные поля AbstractUser
+    list_display = ('id', 'username', 'email', 'is_staff', 'is_active')
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
+    search_fields = ('username', 'email', 'first_name', 'last_name')
+    ordering = ('id',)
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        ('Личная информация', {'fields': ('first_name', 'last_name', 'email')}),
+        ('Права', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Важные даты', {'fields': ('last_login', 'date_joined')}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2', 'is_staff', 'is_active')}
+        ),
+    )
 
+# =====================
+# Остальные модели
+# =====================
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('id', 'full_name', 'short_biography')
@@ -105,7 +119,7 @@ class BookAdmin(admin.ModelAdmin):
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ('id', 'book_title', 'user_name', 'rating', 'date')
     list_filter = ('rating', 'date')
-    search_fields = ('book__title', 'user__name', 'text')
+    search_fields = ('book__title', 'user__username', 'text')
     raw_id_fields = ('book', 'user')
     readonly_fields = ('id',)
     date_hierarchy = 'date'
@@ -116,21 +130,21 @@ class ReviewAdmin(admin.ModelAdmin):
     book_title.short_description = 'Книга'
 
     def user_name(self, obj):
-        return obj.user.name if obj.user else "-"
+        return obj.user.username if obj.user else "-"
     user_name.short_description = 'Пользователь'
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'user_name', 'date', 'status', 'delivery_address', 'payment_method')
     list_filter = ('status', 'payment_method', 'date')
-    search_fields = ('user__name', 'delivery_address')
+    search_fields = ('user__username', 'delivery_address')
     raw_id_fields = ('user',)
     readonly_fields = ('id',)
     date_hierarchy = 'date'
     list_display_links = ('id',)
 
     def user_name(self, obj):
-        return obj.user.name if obj.user else "-"
+        return obj.user.username if obj.user else "-"
     user_name.short_description = 'Пользователь'
 
 class OrderItemInline(admin.TabularInline):
@@ -159,12 +173,12 @@ class OrderItemAdmin(admin.ModelAdmin):
 class CartAdmin(admin.ModelAdmin):
     list_display = ('id', 'user_name', 'book_title', 'quantity')
     raw_id_fields = ('user', 'book')
-    search_fields = ('user__name', 'book__title')
+    search_fields = ('user__username', 'book__title')
     readonly_fields = ('id',)
     list_display_links = ('id',)
 
     def user_name(self, obj):
-        return obj.user.name if obj.user else "-"
+        return obj.user.username if obj.user else "-"
     user_name.short_description = 'Пользователь'
 
     def book_title(self, obj):

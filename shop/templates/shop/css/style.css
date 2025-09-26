@@ -6,3 +6,47 @@ body {
 .list-group-item img {
 	object-fit: cover;
 }
+
+.book-cover {
+	max-width: 100%; /* картинка не превышает контейнер */
+	height: auto; /* сохраняет пропорции */
+	display: block; /* убирает лишние отступы */
+	margin: 0 auto; /* центрирует картинку */
+	border-radius: 8px; /* скругление углов, по желанию */
+}
+
+.book-card img {
+	width: 100%; /* карточка сама определяет ширину */
+	max-width: 150px; /* максимум для обложки */
+	height: auto;
+	object-fit: cover;
+	border-radius: 4px;
+	margin-bottom: 10px;
+}
+
+body {
+	font-family: 'Inter', sans-serif;
+	background-color: #f8f9fa;
+	color: #333;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-weight: 500;
+}
+
+.book-card {
+	background-color: #fff;
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.book-card:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}

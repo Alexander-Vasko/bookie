@@ -1,150 +1,114 @@
-{% extends 'shop/base.html' %} {% load static %} {% block title %}Главная —
-Bookie{% endblock %} {% block content %}
-<h1 class="h4 mb-3">Главная страница книжного магазина</h1>
+{% extends 'shop/base.html' %}
+{% load static %}
 
-<form
-	class="row g-2 mb-4"
-	method="get"
-	action="{% url 'search_books' %}"
-	role="search"
-	aria-label="Поиск книг"
->
-	<div class="col-auto flex-grow-1">
-		<label for="search-q" class="visually-hidden">Поиск книги</label>
-		<input
-			id="search-q"
-			type="text"
-			name="q"
-			class="form-control"
-			placeholder="Поиск книги"
-			value="{{ request.GET.q|default:'' }}"
-		/>
-	</div>
-	<div class="col-auto">
-		<button class="btn btn-primary" type="submit">Найти</button>
-	</div>
+{% block title %}Главная — Bookie{% endblock %}
+
+{% block content %}
+<h1 class="h4 mb-4">Главная страница Bookie</h1>
+
+<!-- Поиск книг -->
+<form class="d-flex mb-4" method="get" action="{% url 'search_books' %}" role="search" aria-label="Поиск книг">
+    <input type="text" name="q" class="form-control me-2" placeholder="Поиск книги" value="{{ request.GET.q|default:'' }}"/>
+    <button class="btn btn-primary" type="submit">Найти</button>
 </form>
 
-<div class="row">
-	<!-- Популярные -->
-	<section class="col-12 col-md-6 mb-4" aria-labelledby="popular-heading">
-		<h2 id="popular-heading" class="h5">Популярные книги</h2>
-		<ol class="list-group list-group-numbered">
-			{% for book in popular_books %}
-			<li class="list-group-item d-flex align-items-start">
-				<div class="me-3">
-					{% if book.cover %}
-					<img
-						src="{{ book.cover.url }}"
-						alt="Обложка {{ book.title }}"
-						width="70"
-						height="100"
-					/>
-					{% else %}
-					<img
-						src="{% static 'shop/img/default_cover.jpg' %}"
-						alt="Обложка отсутствует"
-						width="70"
-						height="100"
-					/>
-					{% endif %}
-				</div>
-				<div class="flex-fill">
-					<a class="h6 mb-0 d-block" href="{% url 'book_detail' book.pk %}"
-						>{{ book.title }}</a
-					>
-					<div class="small text-muted">
-						{{ book.author.full_name }} • {{ book.year }}
-					</div>
-				</div>
-				<div class="ms-3">
-					<button
-						class="btn btn-outline-secondary btn-sm"
-						aria-label="Добавить {{ book.title }} в избранное"
-					>
-						♡
-					</button>
-				</div>
-			</li>
-			{% endfor %}
-		</ol>
-		<a class="d-inline-block mt-2" href="{% url 'book_list' %}"
-			>Смотреть все популярные</a
-		>
-	</section>
+<div class="row g-4">
+    <!-- Популярные книги -->
+    <section class="col-12 col-md-6">
+        <h2 class="h5 mb-3">Популярные книги</h2>
+        <ul class="list-group">
+            {% for book in popular_books %}
+            <li class="list-group-item d-flex align-items-center">
+                <div class="me-3" style="flex-shrink: 0">
+                    {% if book.cover %}
+                    <img src="{{ book.cover.url }}" alt="{{ book.title }}" style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;"/>
+                    {% else %}
+                    <img src="{% static 'shop/img/default_cover.jpg' %}" alt="Нет обложки" style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;"/>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <a href="{% url 'book_detail' book.pk %}" class="fw-bold">{{ book.title }}</a>
+                    <div class="text-muted small">{{ book.author.full_name }} • {{ book.year }}</div>
+                    {% if book.active_promo %}
+                    <div class="text-danger small">Скидка: {{ book.discounted_price|floatformat:2 }} ₽ ({{ book.active_promo.discount_percent }}%)</div>
+                    {% endif %}
+                </div>
+                <div class="ms-3">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'add_to_favorites' book.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-secondary btn-sm" aria-label="Добавить {{ book.title }} в избранное">♡</button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-outline-secondary btn-sm disabled" title="Авторизуйтесь, чтобы добавить в избранное">♡</button>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'book_list' %}" class="d-block mt-2">Смотреть все популярные</a>
+    </section>
 
-	<!-- Новые -->
-	<section class="col-12 col-md-6 mb-4" aria-labelledby="new-heading">
-		<h2 id="new-heading" class="h5">Новые поступления</h2>
-		<ol class="list-group list-group-numbered">
-			{% for book in new_books %}
-			<li class="list-group-item d-flex align-items-start">
-				<div class="me-3">
-					{% if book.cover %}
-					<img
-						src="{{ book.cover.url }}"
-						alt="Обложка {{ book.title }}"
-						width="70"
-						height="100"
-					/>
-					{% else %}
-					<img
-						src="{% static 'shop/img/default_cover.jpg' %}"
-						alt="Обложка отсутствует"
-						width="70"
-						height="100"
-					/>
-					{% endif %}
-				</div>
-				<div class="flex-fill">
-					<a class="h6 mb-0 d-block" href="{% url 'book_detail' book.pk %}"
-						>{{ book.title }}</a
-					>
-					<div class="small text-muted">
-						{{ book.author.full_name }} • {{ book.year }}
-					</div>
-				</div>
-				<div class="ms-3">
-					<button
-						class="btn btn-outline-secondary btn-sm"
-						aria-label="Добавить {{ book.title }} в избранное"
-					>
-						♡
-					</button>
-				</div>
-			</li>
-			{% endfor %}
-		</ol>
-		<a class="d-inline-block mt-2" href="{% url 'book_list' %}"
-			>Смотреть все новинки</a
-		>
-	</section>
+    <!-- Новые поступления -->
+    <section class="col-12 col-md-6">
+        <h2 class="h5 mb-3">Новые поступления</h2>
+        <ul class="list-group">
+            {% for book in new_books %}
+            <li class="list-group-item d-flex align-items-center">
+                <div class="me-3" style="flex-shrink: 0">
+                    {% if book.cover %}
+                    <img src="{{ book.cover.url }}" alt="{{ book.title }}" style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;"/>
+                    {% else %}
+                    <img src="{% static 'shop/img/default_cover.jpg' %}" alt="Нет обложки" style="width: 60px; height: 90px; object-fit: cover; border-radius: 4px;"/>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <a href="{% url 'book_detail' book.pk %}" class="fw-bold">{{ book.title }}</a>
+                    <div class="text-muted small">{{ book.author.full_name }} • {{ book.year }}</div>
+                    {% if book.active_promo %}
+                    <div class="text-danger small">Скидка: {{ book.discounted_price|floatformat:2 }} ₽ ({{ book.active_promo.discount_percent }}%)</div>
+                    {% endif %}
+                </div>
+                <div class="ms-3">
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'add_to_favorites' book.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button class="btn btn-outline-secondary btn-sm" aria-label="Добавить {{ book.title }} в избранное">♡</button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-outline-secondary btn-sm disabled" title="Авторизуйтесь, чтобы добавить в избранное">♡</button>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'book_list' %}" class="d-block mt-2">Смотреть все новинки</a>
+    </section>
 </div>
 
 <!-- Акции -->
-<section class="mb-4" aria-labelledby="promo-heading">
-	<h2 id="promo-heading" class="h5">Акции и скидки</h2>
-	<ol class="list-group list-group-numbered">
-		{% for promo in promo_books %}
-		<li class="list-group-item d-flex align-items-center">
-			<div class="flex-fill">
-				<a href="{% url 'book_detail' promo.book.pk %}"
-					>{{ promo.book.title }}</a
-				>
-				<div class="small text-muted">{{ promo.book.author.full_name }}</div>
-				<div class="small text-danger">Скидка: {{ promo.book.discount }}%</div>
-			</div>
-			<div>
-				<button
-					class="btn btn-outline-secondary btn-sm"
-					aria-label="Добавить {{ promo.book.title }} в избранное"
-				>
-					♡
-				</button>
-			</div>
-		</li>
-		{% endfor %}
-	</ol>
+<section class="mt-4">
+    <h2 class="h5 mb-3">Акции и скидки</h2>
+    <ul class="list-group">
+        {% for promo in promo_books %}
+        <li class="list-group-item d-flex align-items-center justify-content-between">
+            <div>
+                <a href="{% url 'book_detail' promo.book.pk %}" class="fw-bold">{{ promo.book.title }}</a>
+                <div class="text-muted small">{{ promo.book.author.full_name }}</div>
+                <div class="text-danger small">Скидка: {{ promo.book.discounted_price|floatformat:2 }} ₽ ({{ promo.promotion.discount_percent }}%)</div>
+            </div>
+            <div>
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'add_to_favorites' promo.book.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-secondary btn-sm" aria-label="Добавить {{ promo.book.title }} в избранное">♡</button>
+                    </form>
+                {% else %}
+                    <button class="btn btn-outline-secondary btn-sm disabled" title="Авторизуйтесь, чтобы добавить в избранное">♡</button>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
 </section>
-
 {% endblock %}

@@ -1,0 +1,59 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Корзина{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Корзина</h1>
+
+{% if items %}
+<table class="table table-bordered align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>Книга</th>
+            <th>Автор</th>
+            <th>Цена</th>
+            <th>Количество</th>
+            <th>Сумма</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td>
+                <a href="{{ item.book.get_absolute_url }}">{{ item.book.title }}</a>
+            </td>
+            <td>{{ item.book.author.full_name }}</td>
+            <td>
+                {% if item.book.active_promo %}
+                    <span class="text-decoration-line-through">{{ item.book.price }} ₽</span>
+                    <span class="text-danger fw-bold">{{ item.book.discounted_price|floatformat:2 }} ₽</span>
+                {% else %}
+                    {{ item.book.price }} ₽
+                {% endif %}
+            </td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.total_price|floatformat:2 }} ₽</td>
+            <td>
+                <form method="post" action="{% url 'remove_from_cart' item.book.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4 class="text-end">Итого: {{ total|floatformat:2 }} ₽</h4>
+
+<a href="{% url 'book_list' %}" class="btn btn-outline-secondary">Продолжить покупки</a>
+<a href="#" class="btn btn-primary">Оформить заказ</a>
+
+{% else %}
+<p class="text-muted">Ваша корзина пуста.</p>
+<a href="{% url 'book_list' %}" class="btn btn-outline-secondary">Перейти к покупкам</a>
+{% endif %}
+
+{% endblock %}

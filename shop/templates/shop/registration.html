@@ -1,0 +1,48 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Регистрация — Bookie{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="mb-4">Регистрация в Bookie</h1>
+
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            Проверьте правильность введённых данных.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="id_name" class="form-label">Имя</label>
+                <input type="text" name="name" class="form-control" id="id_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_email" class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" id="id_email" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_phone" class="form-label">Телефон</label>
+                <input type="text" name="phone" class="form-control" id="id_phone">
+            </div>
+            <div class="mb-3">
+                <label for="id_address" class="form-label">Адрес</label>
+                <input type="text" name="address" class="form-control" id="id_address">
+            </div>
+            <div class="mb-3">
+                <label for="id_password1" class="form-label">Пароль</label>
+                <input type="password" name="password1" class="form-control" id="id_password1" required>
+            </div>
+            <div class="mb-3">
+                <label for="id_password2" class="form-label">Повторите пароль</label>
+                <input type="password" name="password2" class="form-control" id="id_password2" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+            <a href="{% url 'login' %}" class="btn btn-outline-secondary">Вход</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

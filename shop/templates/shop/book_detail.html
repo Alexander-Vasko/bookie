@@ -1,54 +1,96 @@
-{% extends 'shop/base.html' %} {% block title %}{{ book.title }}{% endblock %}
+{% extends 'shop/base.html' %}
+{% load static %}
+{% block title %}{{ book.title }}{% endblock %}
+
 {% block content %}
-<h1>{{ book.title }}</h1>
+<h1 class="mb-3">{{ book.title }}</h1>
 
-<p>
-	<strong>Автор:</strong>
-	<a href="{% url 'author_list' %}">{{ book.author.full_name }}</a>
-</p>
-<p><strong>Жанр:</strong> {{ book.genre.name }}</p>
-<p>
-	<strong>Серия:</strong> {% if book.series %}{{ book.series.name }}{% else
-	%}-{% endif %}
-</p>
-<p><strong>Год:</strong> {{ book.year }}</p>
-<p><strong>ISBN:</strong> {{ book.isbn }}</p>
-<p><strong>Цена:</strong> {{ book.price }} ₽</p>
-<p><strong>Скидка:</strong> {{ book.discount }}%</p>
+<div class="row g-4">
+    <div class="col-md-4">
+        {% if book.cover %}
+        <img src="{{ book.cover.url }}" alt="{{ book.title }}" class="img-fluid rounded" style="object-fit: cover; max-height: 400px"/>
+        {% else %}
+        <img src="{% static 'shop/img/default_cover.jpg' %}" alt="Нет обложки" class="img-fluid rounded" style="object-fit: cover; max-height: 400px"/>
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <p><strong>Автор:</strong> <a href="{% url 'author_list' %}">{{ book.author.full_name }}</a></p>
+        <p><strong>Жанр:</strong> {{ book.genre.name }}</p>
+        <p><strong>Серия:</strong> {% if book.series %}{{ book.series.name }}{% else %}-{% endif %}</p>
+        <p><strong>Год:</strong> {{ book.year }}</p>
+        <p><strong>ISBN:</strong> {{ book.isbn }}</p>
 
-{% if book.cover %}
-<p><img src="{{ book.cover.url }}" alt="{{ book.title }}" width="150" /></p>
-{% endif %}
+        <p><strong>Цена:</strong>
+            {% if book.active_promo %}
+                <span class="text-decoration-line-through">{{ book.price }} ₽</span>
+                <span class="text-danger fw-bold">{{ book.discounted_price|floatformat:2 }} ₽</span>
+            {% else %}
+                <span>{{ book.price }} ₽</span>
+            {% endif %}
+        </p>
+
+        {% if book.file %}
+        <p><a href="{{ book.file.url }}" class="btn btn-sm btn-primary">Скачать PDF</a></p>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+        <form method="post" action="{% url 'add_to_cart' book.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success btn-sm">Добавить в корзину</button>
+        </form>
+        <form method="post" action="{% url 'add_to_favorites' book.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">Добавить в избранное</button>
+        </form>
+        {% else %}
+        <p class="text-muted">Авторизуйтесь, чтобы добавлять в корзину и избранное.</p>
+        {% endif %}
+    </div>
+</div>
 
 <hr />
 
 <h2>Отзывы</h2>
-{% if book.review_set.all %}
-<ul>
-	{% for review in book.review_set.all %}
-	<li>
-		<strong>{{ review.user.name }}:</strong> {{ review.text }} ({{ review.rating
-		}}/5)
-	</li>
-	{% endfor %}
+{% if reviews %}
+<ul class="list-group mb-3">
+    {% for review in reviews %}
+    <li class="list-group-item">
+        <strong>{{ review.user.name }}</strong>: {{ review.text }} ({{ review.rating }}/5)
+    </li>
+    {% endfor %}
 </ul>
 {% else %}
 <p>Нет отзывов.</p>
 {% endif %}
 
-<hr />
+{% if user.is_authenticated %}
+<h3>Оставить отзыв</h3>
+<form method="post" action="{% url 'add_review' book.id %}">
+    {% csrf_token %}
+    <div class="mb-2">
+        <label for="rating" class="form-label">Рейтинг (1-5):</label>
+        <input type="number" min="1" max="5" name="rating" id="rating" class="form-control" required>
+    </div>
+    <div class="mb-2">
+        <label for="text" class="form-label">Текст отзыва:</label>
+        <textarea name="text" id="text" class="form-control" rows="3" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Отправить</button>
+</form>
+{% else %}
+<p class="text-muted">Авторизуйтесь, чтобы оставить отзыв.</p>
+{% endif %}
 
 <h2>Акции и скидки</h2>
-{% if book.promobook_set.all %}
-<ul>
-	{% for promo in book.promobook_set.all %}
-	<li>{{ promo.promotion.description }} — Скидка: {{ book.discount }}%</li>
-	{% endfor %}
+{% if book.active_promo %}
+<ul class="list-group mb-3">
+    <li class="list-group-item">
+        {{ book.active_promo.description }} — Скидка: {{ book.active_promo.discount_percent }}%
+    </li>
 </ul>
 {% else %}
 <p>Нет активных акций.</p>
 {% endif %}
 
-<a href="{% url 'book_list' %}">Вернуться к списку книг</a>
-
+<a href="{% url 'book_list' %}" class="btn btn-outline-secondary">Вернуться к списку книг</a>
 {% endblock %}
